@@ -12,7 +12,7 @@ fun box(): String {
     var s = ""
     val name = "equals--impl"
     val specializedEquals =
-        Class.forName("Simple\$Erased").getDeclaredMethod("equals--impl", String::class.java, String::class.java)
+        Class.forName("Simple").getDeclaredMethod("equals--impl", String::class.java, String::class.java)
             ?: return "$name not found"
 
     try {
