@@ -6,8 +6,6 @@
 package kotlin.script.experimental.jvmhost.impl
 
 import org.jetbrains.kotlin.codegen.state.GenerationState
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.net.URLClassLoader
 import kotlin.reflect.KClass
@@ -17,22 +15,18 @@ import kotlin.script.experimental.jvmhost.JvmScriptEvaluationConfiguration
 import kotlin.script.experimental.jvmhost.baseClassLoader
 
 class KJvmCompiledScript<out ScriptBase : Any>(
-    compilationConfiguration: ScriptCompilationConfiguration,
+    override val compilationConfiguration: ScriptCompilationConfiguration,
     generationState: GenerationState,
     private var scriptClassFQName: String
 ) : CompiledScript<ScriptBase>, Serializable {
 
-    private var _compilationConfiguration: ScriptCompilationConfiguration? = compilationConfiguration
-    private var compilerOutputFiles: Map<String, ByteArray> = run {
+    private val compilerOutputFiles: Map<String, ByteArray> = run {
         val res = sortedMapOf<String, ByteArray>()
         for (it in generationState.factory.asList()) {
             res[it.relativePath] = it.asByteArray()
         }
         res
     }
-
-    override val compilationConfiguration: ScriptCompilationConfiguration
-        get() = _compilationConfiguration!!
 
     override suspend fun getClass(scriptEvaluationConfiguration: ScriptEvaluationConfiguration?): ResultWithDiagnostics<KClass<*>> = try {
         val baseClassLoader = scriptEvaluationConfiguration?.get(JvmScriptEvaluationConfiguration.baseClassLoader)
@@ -54,24 +48,6 @@ class KJvmCompiledScript<out ScriptBase : Any>(
                 exception = e
             )
         )
-    }
-
-    // This method is exposed because the compilation configuration is not generally serializable (yet), but since it is supposed to
-    // be deserialized only from the cache, the configuration could be assigned from the cache.load method
-    fun setCompilationConfiguration(configuration: ScriptCompilationConfiguration) {
-        if (_compilationConfiguration != null) throw IllegalStateException("This method is applicable only in deserialization context")
-        _compilationConfiguration = configuration
-    }
-
-    private fun writeObject(outputStream: ObjectOutputStream) {
-        outputStream.writeObject(compilerOutputFiles)
-        outputStream.writeObject(scriptClassFQName)
-    }
-
-    private fun readObject(inputStream: ObjectInputStream) {
-        _compilationConfiguration = null
-        compilerOutputFiles = inputStream.readObject() as Map<String, ByteArray>
-        scriptClassFQName = inputStream.readObject() as String
     }
 
     companion object {

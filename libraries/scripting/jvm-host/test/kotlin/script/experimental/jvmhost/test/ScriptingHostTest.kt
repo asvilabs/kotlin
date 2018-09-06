@@ -171,9 +171,7 @@ private class SimpleMemoryScriptsCache : CompiledJvmScriptsCache {
 private fun File.readCompiledScript(scriptCompilationConfiguration: ScriptCompilationConfiguration): CompiledScript<*> {
     return inputStream().use { fs ->
         ObjectInputStream(fs).use { os ->
-            (os.readObject() as KJvmCompiledScript<*>).apply {
-                setCompilationConfiguration(scriptCompilationConfiguration)
-            }
+            os.readObject() as KJvmCompiledScript<*>
         }
     }
 }
